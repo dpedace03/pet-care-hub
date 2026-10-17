@@ -1,10 +1,21 @@
 // ============================================================================
-// PET CARE HUB - LÓGICA COMPLETA CON CREAR, MODIFICAR Y ELIMINAR (CRUD)
+// PET CARE HUB - LÓGICA COMPLETA Y TEMAS
 // ============================================================================
 
+const themes = {
+    indigo: { primary: "bg-indigo-600", activeTabBg: "bg-indigo-600", activeTabFg: "text-white" },
+    emerald: { primary: "bg-emerald-600", activeTabBg: "bg-emerald-600", activeTabFg: "text-white" },
+    rose: { primary: "bg-rose-600", activeTabBg: "bg-rose-600", activeTabFg: "text-white" },
+    amber: { primary: "bg-amber-500", activeTabBg: "bg-amber-500", activeTabFg: "text-white" },
+    sky: { primary: "bg-sky-600", activeTabBg: "bg-sky-600", activeTabFg: "text-white" },
+    slate: { primary: "bg-slate-800", activeTabBg: "bg-slate-800", activeTabFg: "text-white" }
+};
+
 let state = {
+    theme: "indigo",
     googleSheetUrl: "",
     activePetId: "pet-1",
+    currentTab: "dashboard",
     pets: [
         {
             id: "pet-1",
@@ -29,9 +40,13 @@ let state = {
             vet: { clinic: "Clínica Felina", doctor: "Dr. Martín Rossi", phone: "+541155667788", emergency: "+541188776655", address: "Av. Santa Fe 1200, CABA" }
         }
     ],
+    healthRecords: [
+        { id: "h1", petId: "pet-1", title: "Vacuna Antirrábica", type: "Vacuna", date: "2026-03-15", notes: "Refuerzo anual ok" },
+        { id: "h2", petId: "pet-1", title: "Pipeta Antipulgas", type: "Desparasitación", date: "2026-09-10", notes: "Aplicada correctamente" }
+    ],
     appointments: [
-        { id: "a1", petId: "pet-1", title: "Corte de pelo y Baño", type: "Peluquería", date: "2026-10-25", time: "15:00", cost: 12000 },
-        { id: "a2", petId: "pet-1", title: "Control Anual y Vacuna", type: "Veterinaria", date: "2026-11-02", time: "10:30", cost: 18000 }
+        { id: "a1", petId: "pet-1", title: "Corte de pelo y Baño", type: "Peluquería", date: "2026-10-25", time: "15:00", cost: 12000, status: "Nuevo", notes: "Llevar su propio champú hipoalergénico" },
+        { id: "a2", petId: "pet-1", title: "Control Anual y Vacuna", type: "Veterinaria", date: "2026-11-02", time: "10:30", cost: 18000, status: "Nuevo", notes: "Ayuno de 6 horas" }
     ],
     expenses: [
         { id: "e1", petId: "pet-1", concept: "Alimento Balanceado 15kg", category: "Comida", amount: 45000, date: "2026-10-01" },
@@ -41,30 +56,130 @@ let state = {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadLocalData();
+    applyTheme(state.theme || "indigo");
     renderPetSelector();
-    renderDashboard();
+    switchTab(state.currentTab || "dashboard");
     initCharts();
-
-    if (state.googleSheetUrl) {
-        const inputUrl = document.getElementById("googleSheetUrlInput");
-        if (inputUrl) inputUrl.value = state.googleSheetUrl;
-    }
 });
 
 function saveLocalData() {
-    localStorage.setItem("petcare_data", JSON.stringify(state));
+    localStorage.setItem("petcare_data_v2", JSON.stringify(state));
 }
 
 function loadLocalData() {
-    const saved = localStorage.getItem("petcare_data");
+    const saved = localStorage.getItem("petcare_data_v2");
     if (saved) state = JSON.parse(saved);
 }
 
 // ============================================================================
-// CRUD MASCOTAS (AGREGAR, EDITAR, ELIMINAR)
+// TEMAS DE COLOR
+// ============================================================================
+function setTheme(themeName) {
+    state.theme = themeName;
+    saveLocalData();
+    applyTheme(themeName);
+}
+
+function applyTheme(themeName) {
+    const t = themes[themeName] || themes.indigo;
+    const header = document.getElementById("appHeader");
+    
+    // Resetear clases de color del header
+    header.className = `text-white shadow-lg sticky top-0 z-50 transition-colors duration-300 ${t.primary}`;
+
+    // Estilos dinámicos para elementos con clase theme-bg
+    document.querySelectorAll(".theme-bg").forEach(el => {
+        el.className = el.className.replace(/bg-\w+-\d+/g, "");
+        el.classList.add(t.primary);
+    });
+
+    switchTab(state.currentTab || "dashboard");
+}
+
+function openConfigModal() {
+    document.getElementById("googleSheetUrlInput").value = state.googleSheetUrl || "";
+    openModal("configModal");
+}
+
+function saveConfig() {
+    state.googleSheetUrl = document.getElementById("googleSheetUrlInput").value.trim();
+    saveLocalData();
+    closeModal("configModal");
+    alert("¡Configuración guardada!");
+}
+
+// ============================================================================
+// NAVEGACIÓN Y TABS (BOTONES)
+// ============================================================================
+function switchTab(tabName) {
+    state.currentTab = tabName;
+    saveLocalData();
+
+    document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+    
+    const t = themes[state.theme] || themes.indigo;
+
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.className = "tab-btn py-3 px-3 rounded-xl font-bold text-sm shadow-sm flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 transition bg-white text-slate-600 hover:bg-slate-50";
+    });
+
+    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    if (activeBtn) {
+        activeBtn.className = `tab-btn py-3 px-3 rounded-xl font-bold text-sm shadow flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 transition ${t.activeTabBg} ${t.activeTabFg}`;
+    }
+
+    if (tabName === 'dashboard') renderDashboard();
+    if (tabName === 'health') renderHealthSection();
+    if (tabName === 'appointments') renderAppointmentsSection();
+    if (tabName === 'finances') renderExpensesSection();
+    if (tabName === 'vet') loadVetForm();
+}
+
+function getActivePet() {
+    return state.pets.find(p => p.id === state.activePetId) || state.pets[0];
+}
+
+function renderPetSelector() {
+    const selector = document.getElementById("petSelector");
+    selector.innerHTML = state.pets.map(p =>
+        `<option value="${p.id}" ${p.id === state.activePetId ? 'selected' : ''}>${p.name}</option>`
+    ).join("");
+}
+
+function changeActivePet(petId) {
+    state.activePetId = petId;
+    saveLocalData();
+    switchTab(state.currentTab);
+}
+
+// ============================================================================
+// RENDER GENERAL
+// ============================================================================
+function renderDashboard() {
+    const pet = getActivePet();
+    if (!pet) return;
+
+    document.getElementById("petName").innerText = pet.name;
+    document.getElementById("petBreed").innerText = pet.breed;
+    document.getElementById("petAge").innerText = pet.age;
+    document.getElementById("petWeight").innerText = `${pet.weight} kg`;
+    document.getElementById("petChip").innerText = pet.chip || "N/A";
+    document.getElementById("petSpecies").innerText = pet.species;
+    document.getElementById("petAvatar").src = pet.photo;
+
+    const list = document.getElementById("dashboardAppointmentsList");
+    const petAppointments = state.appointments.filter(a => a.petId === pet.id);
+
+    list.innerHTML = petAppointments.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay citas agendadas.</p>` :
+        petAppointments.map(a => renderAppointmentCard(a)).join("");
+}
+
+// ============================================================================
+// CRUD MASCOTAS
 // ============================================================================
 function openPetModal(petToEdit = null) {
-    document.getElementById("petModalTitle").innerText = petToEdit ? "Editar Mascota" : "Agregar Nueva Mascota";
+    document.getElementById("petModalTitle").innerText = petToEdit ? "Editar Mascota" : "Agregar Mascota";
     document.getElementById("petFormId").value = petToEdit ? petToEdit.id : "";
     document.getElementById("petFormName").value = petToEdit ? petToEdit.name : "";
     document.getElementById("petFormSpecies").value = petToEdit ? petToEdit.species : "Perro";
@@ -89,14 +204,9 @@ function savePetForm(e) {
     const photo = document.getElementById("petFormPhoto").value || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400";
 
     if (id) {
-        // Editar existente
         const pet = state.pets.find(p => p.id === id);
-        if (pet) {
-            pet.name = name; pet.species = species; pet.breed = breed;
-            pet.age = age; pet.weight = weight; pet.chip = chip; pet.photo = photo;
-        }
+        if (pet) Object.assign(pet, { name, species, breed, age, weight, chip, photo });
     } else {
-        // Crear nueva
         const newId = "pet-" + Date.now();
         state.pets.push({ id: newId, name, species, breed, age, weight, chip, photo, vet: {} });
         state.activePetId = newId;
@@ -104,97 +214,226 @@ function savePetForm(e) {
 
     saveLocalData();
     renderPetSelector();
-    renderDashboard();
+    switchTab(state.currentTab);
     closeModal("petModal");
 }
 
-function editCurrentPet() {
-    openPetModal(getActivePet());
-}
+function editCurrentPet() { openPetModal(getActivePet()); }
 
 function deleteCurrentPet() {
     const pet = getActivePet();
     if (!pet) return;
 
     if (state.pets.length === 1) {
-        alert("Debe haber al menos una mascota en el sistema.");
+        alert("Debe haber al menos una mascota registrada.");
         return;
     }
 
-    if (confirm(`¿Estás seguro de que querés eliminar a ${pet.name}?`)) {
+    if (confirm(`¿Eliminar a ${pet.name}? Se borrarán también sus citas y gastos.`)) {
         state.pets = state.pets.filter(p => p.id !== pet.id);
         state.appointments = state.appointments.filter(a => a.petId !== pet.id);
         state.expenses = state.expenses.filter(e => e.petId !== pet.id);
+        state.healthRecords = state.healthRecords.filter(h => h.petId !== pet.id);
         state.activePetId = state.pets[0].id;
 
         saveLocalData();
         renderPetSelector();
-        renderDashboard();
+        switchTab(state.currentTab);
     }
 }
 
 // ============================================================================
-// CRUD CITAS (AGREGAR Y ELIMINAR)
+// CRUD CITAS (ESTADOS + NOTAS + EDITAR)
 // ============================================================================
-function openAppointmentModal() {
-    document.getElementById("appFormDate").value = new Date().toISOString().split("T")[0];
+function openAppointmentModal(appToEdit = null) {
+    document.getElementById("appModalTitle").innerText = appToEdit ? "Editar Cita" : "Agendar Cita";
+    document.getElementById("appFormId").value = appToEdit ? appToEdit.id : "";
+    document.getElementById("appFormTitle").value = appToEdit ? appToEdit.title : "";
+    document.getElementById("appFormType").value = appToEdit ? appToEdit.type : "Veterinaria";
+    document.getElementById("appFormStatus").value = appToEdit ? appToEdit.status : "Nuevo";
+    document.getElementById("appFormDate").value = appToEdit ? appToEdit.date : new Date().toISOString().split("T")[0];
+    document.getElementById("appFormTime").value = appToEdit ? appToEdit.time : "10:00";
+    document.getElementById("appFormCost").value = appToEdit ? appToEdit.cost : "";
+    document.getElementById("appFormNotes").value = appToEdit ? appToEdit.notes : "";
+
     openModal("appointmentModal");
 }
 
 function saveAppointmentForm(e) {
     e.preventDefault();
-    const newApp = {
-        id: "a-" + Date.now(),
-        petId: state.activePetId,
-        title: document.getElementById("appFormTitle").value,
-        type: document.getElementById("appFormType").value,
-        cost: parseFloat(document.getElementById("appFormCost").value) || 0,
-        date: document.getElementById("appFormDate").value,
-        time: document.getElementById("appFormTime").value
-    };
+    const id = document.getElementById("appFormId").value;
+    const title = document.getElementById("appFormTitle").value;
+    const type = document.getElementById("appFormType").value;
+    const status = document.getElementById("appFormStatus").value;
+    const date = document.getElementById("appFormDate").value;
+    const time = document.getElementById("appFormTime").value;
+    const cost = parseFloat(document.getElementById("appFormCost").value) || 0;
+    const notes = document.getElementById("appFormNotes").value;
 
-    state.appointments.push(newApp);
-    saveLocalData();
-    renderDashboard();
-    if (!document.getElementById("sec-appointments").classList.contains("hidden")) {
-        renderAppointmentsSection();
+    if (id) {
+        const app = state.appointments.find(a => a.id === id);
+        if (app) Object.assign(app, { title, type, status, date, time, cost, notes });
+    } else {
+        state.appointments.push({ id: "a-" + Date.now(), petId: state.activePetId, title, type, status, date, time, cost, notes });
     }
+
+    saveLocalData();
+    switchTab(state.currentTab);
     closeModal("appointmentModal");
+}
+
+function editAppointment(id) {
+    const app = state.appointments.find(a => a.id === id);
+    if (app) openAppointmentModal(app);
 }
 
 function deleteAppointment(id) {
     if (confirm("¿Eliminar esta cita?")) {
         state.appointments = state.appointments.filter(a => a.id !== id);
         saveLocalData();
-        renderDashboard();
-        renderAppointmentsSection();
+        switchTab(state.currentTab);
     }
 }
 
+function renderAppointmentCard(a) {
+    const statusColors = {
+        Nuevo: "bg-blue-100 text-blue-800 border-blue-200",
+        Cumplida: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        Cancelada: "bg-red-100 text-red-800 border-red-200"
+    };
+
+    return `
+        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">${a.type}</span>
+                <span class="text-xs font-bold px-2 py-0.5 rounded-md border ${statusColors[a.status] || statusColors.Nuevo}">${a.status}</span>
+            </div>
+            <h4 class="font-bold text-base text-slate-800">${a.title}</h4>
+            <p class="text-xs text-slate-600"><i class="fa-regular fa-calendar mr-1"></i>${a.date} - ${a.time} hs</p>
+            ${a.notes ? `<p class="text-xs text-slate-500 bg-white p-2 rounded border border-slate-100"><i class="fa-solid fa-comment mr-1 text-slate-400"></i>${a.notes}</p>` : ''}
+            <div class="flex justify-between items-center pt-2 border-t border-slate-200">
+                <span class="text-xs font-bold text-emerald-600">Costo: $${a.cost}</span>
+                <div class="flex items-center space-x-2">
+                    <button onclick="downloadICS('${a.title}', '${a.date}', '${a.time}')" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-700" title="Descargar Calendario">.ics</button>
+                    <button onclick="editAppointment('${a.id}')" class="text-xs text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteAppointment('${a.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderAppointmentsSection() {
+    const list = document.getElementById("fullAppointmentsList");
+    const petAppointments = state.appointments.filter(a => a.petId === state.activePetId);
+    list.innerHTML = petAppointments.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay citas registradas para esta mascota.</p>` :
+        petAppointments.map(a => renderAppointmentCard(a)).join("");
+}
+
 // ============================================================================
-// CRUD GASTOS (AGREGAR Y ELIMINAR)
+// CRUD SALUD Y VACUNAS
 // ============================================================================
-function openExpenseModal() {
-    document.getElementById("expFormDate").value = new Date().toISOString().split("T")[0];
+function openHealthModal(recordToEdit = null) {
+    document.getElementById("healthModalTitle").innerText = recordToEdit ? "Editar Registro" : "Nuevo Registro de Salud";
+    document.getElementById("healthFormId").value = recordToEdit ? recordToEdit.id : "";
+    document.getElementById("healthFormTitle").value = recordToEdit ? recordToEdit.title : "";
+    document.getElementById("healthFormType").value = recordToEdit ? recordToEdit.type : "Vacuna";
+    document.getElementById("healthFormDate").value = recordToEdit ? recordToEdit.date : new Date().toISOString().split("T")[0];
+    document.getElementById("healthFormNotes").value = recordToEdit ? recordToEdit.notes : "";
+
+    openModal("healthModal");
+}
+
+function saveHealthForm(e) {
+    e.preventDefault();
+    const id = document.getElementById("healthFormId").value;
+    const title = document.getElementById("healthFormTitle").value;
+    const type = document.getElementById("healthFormType").value;
+    const date = document.getElementById("healthFormDate").value;
+    const notes = document.getElementById("healthFormNotes").value;
+
+    if (id) {
+        const h = state.healthRecords.find(item => item.id === id);
+        if (h) Object.assign(h, { title, type, date, notes });
+    } else {
+        state.healthRecords.push({ id: "h-" + Date.now(), petId: state.activePetId, title, type, date, notes });
+    }
+
+    saveLocalData();
+    renderHealthSection();
+    closeModal("healthModal");
+}
+
+function editHealthRecord(id) {
+    const h = state.healthRecords.find(item => item.id === id);
+    if (h) openHealthModal(h);
+}
+
+function deleteHealthRecord(id) {
+    if (confirm("¿Eliminar este registro de salud?")) {
+        state.healthRecords = state.healthRecords.filter(item => item.id !== id);
+        saveLocalData();
+        renderHealthSection();
+    }
+}
+
+function renderHealthSection() {
+    const list = document.getElementById("healthRecordsList");
+    const records = state.healthRecords.filter(h => h.petId === state.activePetId);
+    list.innerHTML = records.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay registros cargados.</p>` :
+        records.map(h => `
+            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                    <span class="text-xs font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded">${h.type}</span>
+                    <h4 class="font-bold text-sm text-slate-800 mt-1">${h.title}</h4>
+                    <p class="text-xs text-slate-400">${h.date} - ${h.notes}</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="editHealthRecord('${h.id}')" class="text-xs text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteHealthRecord('${h.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                </div>
+            </div>
+        `).join("");
+}
+
+// ============================================================================
+// CRUD GASTOS
+// ============================================================================
+function openExpenseModal(expToEdit = null) {
+    document.getElementById("expModalTitle").innerText = expToEdit ? "Editar Gasto" : "Registrar Gasto";
+    document.getElementById("expFormId").value = expToEdit ? expToEdit.id : "";
+    document.getElementById("expFormConcept").value = expToEdit ? expToEdit.concept : "";
+    document.getElementById("expFormCategory").value = expToEdit ? expToEdit.category : "Comida";
+    document.getElementById("expFormAmount").value = expToEdit ? expToEdit.amount : "";
+    document.getElementById("expFormDate").value = expToEdit ? expToEdit.date : new Date().toISOString().split("T")[0];
+
     openModal("expenseModal");
 }
 
 function saveExpenseForm(e) {
     e.preventDefault();
-    const newExpense = {
-        id: "e-" + Date.now(),
-        petId: state.activePetId,
-        concept: document.getElementById("expFormConcept").value,
-        category: document.getElementById("expFormCategory").value,
-        amount: parseFloat(document.getElementById("expFormAmount").value) || 0,
-        date: document.getElementById("expFormDate").value
-    };
+    const id = document.getElementById("expFormId").value;
+    const concept = document.getElementById("expFormConcept").value;
+    const category = document.getElementById("expFormCategory").value;
+    const amount = parseFloat(document.getElementById("expFormAmount").value) || 0;
+    const date = document.getElementById("expFormDate").value;
 
-    state.expenses.push(newExpense);
+    if (id) {
+        const ex = state.expenses.find(item => item.id === id);
+        if (ex) Object.assign(ex, { concept, category, amount, date });
+    } else {
+        state.expenses.push({ id: "e-" + Date.now(), petId: state.activePetId, concept, category, amount, date });
+    }
+
     saveLocalData();
     renderExpensesSection();
     initCharts();
     closeModal("expenseModal");
+}
+
+function editExpense(id) {
+    const ex = state.expenses.find(item => item.id === id);
+    if (ex) openExpenseModal(ex);
 }
 
 function deleteExpense(id) {
@@ -206,145 +445,28 @@ function deleteExpense(id) {
     }
 }
 
-// ============================================================================
-// SINCRONIZACIÓN A GOOGLE SHEETS
-// ============================================================================
-function saveGoogleSheetUrl() {
-    const url = document.getElementById("googleSheetUrlInput").value.trim();
-    if (!url) return alert("Ingresá una URL válida de Google Apps Script.");
-    state.googleSheetUrl = url;
-    saveLocalData();
-    alert("¡URL de Google Apps Script guardada correctamente!");
-}
-
-async function syncAllToGoogleSheet() {
-    const url = state.googleSheetUrl || document.getElementById("googleSheetUrlInput").value.trim();
-    if (!url) return alert("Por favor pegá primero la URL de tu Web App de Google Apps Script.");
-
-    const payload = { pets: state.pets, appointments: state.appointments, expenses: state.expenses };
-
-    try {
-        alert("Sincronizando datos con Google Sheets...");
-        await fetch(url, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        alert("¡Datos sincronizados exitosamente con Google Sheets!");
-    } catch (error) {
-        alert("Error al sincronizar: " + error.toString());
-    }
-}
-
-// ============================================================================
-// NAVEGACIÓN Y RENDERIZADO
-// ============================================================================
-function switchTab(tabName) {
-    document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
-    document.querySelectorAll(".tab-btn").forEach(el => {
-        el.classList.remove("active-tab");
-        el.classList.add("text-slate-500");
-    });
-
-    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
-    const activeBtn = document.getElementById(`tab-${tabName}`);
-    activeBtn.classList.add("active-tab");
-    activeBtn.classList.remove("text-slate-500");
-
-    if (tabName === 'appointments') renderAppointmentsSection();
-    if (tabName === 'finances') renderExpensesSection();
-    if (tabName === 'vet') loadVetForm();
-}
-
-function getActivePet() {
-    return state.pets.find(p => p.id === state.activePetId) || state.pets[0];
-}
-
-function renderPetSelector() {
-    const selector = document.getElementById("petSelector");
-    selector.innerHTML = state.pets.map(p =>
-        `<option value="${p.id}" ${p.id === state.activePetId ? 'selected' : ''}>${p.name}</option>`
-    ).join("");
-}
-
-function changeActivePet(petId) {
-    state.activePetId = petId;
-    saveLocalData();
-    renderDashboard();
-}
-
-function renderDashboard() {
-    const pet = getActivePet();
-    if (!pet) return;
-
-    document.getElementById("petName").innerText = pet.name;
-    document.getElementById("petBreed").innerText = pet.breed;
-    document.getElementById("petAge").innerText = pet.age;
-    document.getElementById("petWeight").innerText = `${pet.weight} kg`;
-    document.getElementById("petChip").innerText = pet.chip || "N/A";
-    document.getElementById("petSpecies").innerText = pet.species;
-    document.getElementById("petAvatar").src = pet.photo;
-
-    const list = document.getElementById("dashboardAppointmentsList");
-    const petAppointments = state.appointments.filter(a => a.petId === pet.id);
-
-    list.innerHTML = petAppointments.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay citas agendadas.</p>` :
-        petAppointments.map(a => `
-            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div class="flex items-center space-x-3">
-                    <span class="p-2 bg-indigo-100 text-indigo-600 rounded-lg text-xs font-bold">${a.type}</span>
-                    <div>
-                        <h4 class="font-bold text-sm text-slate-800">${a.title}</h4>
-                        <p class="text-xs text-slate-500"><i class="fa-regular fa-calendar mr-1"></i>${a.date} - ${a.time} hs</p>
-                    </div>
+function renderExpensesSection() {
+    const list = document.getElementById("expensesList");
+    const petExpenses = state.expenses.filter(e => e.petId === state.activePetId);
+    list.innerHTML = petExpenses.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay gastos registrados.</p>` :
+        petExpenses.map(e => `
+            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                    <h4 class="font-bold text-sm text-slate-800">${e.concept}</h4>
+                    <span class="text-xs text-slate-400">${e.category} • ${e.date}</span>
                 </div>
-                <div class="flex items-center space-x-2">
-                    <button onclick="downloadICS('${a.title}', '${a.date}', '${a.time}')" class="text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-700">.ics</button>
-                    <button onclick="deleteAppointment('${a.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex items-center space-x-3">
+                    <span class="font-bold text-slate-800">$${e.amount}</span>
+                    <button onclick="editExpense('${e.id}')" class="text-xs text-indigo-600 hover:text-indigo-800"><i class="fa-solid fa-pen"></i></button>
+                    <button onclick="deleteExpense('${e.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
         `).join("");
 }
 
-function renderAppointmentsSection() {
-    document.getElementById("fullAppointmentsList").innerHTML = state.appointments.map(a => {
-        const pet = state.pets.find(p => p.id === a.petId);
-        return `
-            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 relative">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">${a.type}</span>
-                    <span class="text-xs text-slate-400">Mascota: ${pet ? pet.name : 'N/A'}</span>
-                </div>
-                <h4 class="font-bold text-base text-slate-800">${a.title}</h4>
-                <p class="text-xs text-slate-600">${a.date} a las ${a.time} hs</p>
-                <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-                    <span class="text-xs font-bold text-emerald-600">Costo: $${a.cost}</span>
-                    <button onclick="deleteAppointment('${a.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash mr-1"></i> Eliminar</button>
-                </div>
-            </div>
-        `;
-    }).join("");
-}
-
-function renderExpensesSection() {
-    document.getElementById("expensesList").innerHTML = state.expenses.map(e => {
-        const pet = state.pets.find(p => p.id === e.petId);
-        return `
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <div>
-                    <h4 class="font-bold text-sm text-slate-800">${e.concept}</h4>
-                    <span class="text-xs text-slate-400">${e.category} • ${pet ? pet.name : 'N/A'} • ${e.date}</span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <span class="font-bold text-slate-800">$${e.amount}</span>
-                    <button onclick="deleteExpense('${e.id}')" class="text-xs text-red-500 hover:text-red-700"><i class="fa-solid fa-trash"></i></button>
-                </div>
-            </div>
-        `;
-    }).join("");
-}
-
+// ============================================================================
+// VETERINARIA DE CABECERA
+// ============================================================================
 function loadVetForm() {
     const vet = getActivePet().vet || {};
     document.getElementById("vetClinicName").value = vet.clinic || "";
@@ -367,9 +489,57 @@ function saveVetInfo(e) {
     alert("¡Datos veterinarios guardados!");
 }
 
+// ============================================================================
+// SINCRONIZACIÓN GOOGLE SHEETS
+// ============================================================================
+async function syncAllToGoogleSheet() {
+    const url = state.googleSheetUrl;
+    if (!url) {
+        alert("Por favor configurá la URL de Google Apps Script en el botón de Configuración (⚙️).");
+        openConfigModal();
+        return;
+    }
+
+    const payload = { pets: state.pets, appointments: state.appointments, expenses: state.expenses };
+
+    try {
+        alert("Sincronizando datos con Google Sheets...");
+        await fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        alert("¡Datos sincronizados exitosamente con Google Sheets!");
+    } catch (error) {
+        alert("Error al sincronizar: " + error.toString());
+    }
+}
+
+// ============================================================================
+// MODALES Y UTILIDADES
+// ============================================================================
+function openModal(id) {
+    const el = document.getElementById(id);
+    el.classList.remove("hidden");
+    el.classList.add("flex");
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    el.classList.add("hidden");
+    el.classList.remove("flex");
+}
+
 function downloadICS(title, date, time) {
     const start = new Date(`${date}T${time}:00`).toISOString().replace(/-|:|\.\d\d\d/g, "");
-    const icsData = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nSUMMARY:${title}\nDTSTART:${start}\nEND:VEVENT\nEND:VCALENDAR`;
+    const icsData = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:${title}
+DTSTART:${start}
+END:VEVENT
+END:VCALENDAR`;
     const blob = new Blob([icsData], { type: "text/calendar;charset=utf-8" });
     const link = document.createElement("a");
     link.href = window.URL.createObjectURL(blob);
@@ -383,20 +553,9 @@ function showQRCode() {
     const pet = getActivePet();
     const qrContainer = document.getElementById("qrcode");
     qrContainer.innerHTML = "";
-    new QRCode(qrContainer, { text: `Mascota: ${pet.name}\nEspecie: ${pet.species}`, width: 128, height: 128 });
+    new QRCode(qrContainer, { text: `Mascota: ${pet.name}
+Especie: ${pet.species}`, width: 128, height: 128 });
     openModal("qrModal");
-}
-
-function openModal(id) {
-    const el = document.getElementById(id);
-    el.classList.remove("hidden");
-    el.classList.add("flex");
-}
-
-function closeModal(id) {
-    const el = document.getElementById(id);
-    el.classList.add("hidden");
-    el.classList.remove("flex");
 }
 
 function initCharts() {
