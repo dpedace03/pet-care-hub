@@ -25,13 +25,16 @@
                 <span class="text-2xl">🐾</span>
                 <h1 class="text-xl font-bold tracking-wide">Pet Care Hub</h1>
             </div>
-            <!-- Selector de Mascota y Sincronización Google Sheets -->
-            <div class="flex items-center space-x-3">
+            <!-- Selector de Mascota, Botón + y Sincronización -->
+            <div class="flex items-center space-x-2">
                 <select id="petSelector" onchange="changeActivePet(this.value)" class="bg-indigo-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300">
                 </select>
-                <button onclick="syncAllToGoogleSheet()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm transition flex items-center space-x-2 shadow">
+                <button onclick="openPetModal()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                    + Mascota
+                </button>
+                <button onclick="syncAllToGoogleSheet()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm transition flex items-center space-x-1 shadow">
                     <i class="fa-solid fa-file-excel"></i>
-                    <span>Sincronizar Sheets</span>
+                    <span class="hidden sm:inline">Sincronizar</span>
                 </button>
             </div>
         </div>
@@ -41,7 +44,7 @@
     <div class="max-w-6xl mx-auto px-4 mt-4">
         <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between text-xs space-y-2 md:space-y-0">
             <span class="text-indigo-900 font-medium">
-                <i class="fa-solid fa-link text-indigo-600 mr-1"></i> URL Web App de Google Apps Script:
+                <i class="fa-solid fa-link text-indigo-600 mr-1"></i> URL Google Apps Script:
             </span>
             <input type="url" id="googleSheetUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full md:w-2/3 p-1.5 border rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500">
             <button onclick="saveGoogleSheetUrl()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-lg transition">Guardar URL</button>
@@ -74,7 +77,7 @@
         <section id="sec-dashboard" class="tab-content space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Tarjeta Perfil Mascota -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center relative">
                     <img id="petAvatar" src="" class="w-28 h-28 rounded-full object-cover shadow-md border-4 border-indigo-100 mb-3" alt="Pet">
                     <h2 id="petName" class="text-2xl font-bold text-slate-800">--</h2>
                     <p id="petBreed" class="text-sm text-slate-500">--</p>
@@ -84,8 +87,16 @@
                         <div><span class="text-slate-400 block">Chip</span><strong id="petChip">--</strong></div>
                         <div><span class="text-slate-400 block">Especie</span><strong id="petSpecies">--</strong></div>
                     </div>
-                    <button onclick="showQRCode()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-qrcode"></i> <span>Ver DNI / QR de Emergencia</span>
+                    <div class="mt-4 w-full grid grid-cols-2 gap-2">
+                        <button onclick="editCurrentPet()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 text-xs font-bold py-2 rounded-lg transition">
+                            <i class="fa-solid fa-pen mr-1"></i> Editar
+                        </button>
+                        <button onclick="deleteCurrentPet()" class="bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold py-2 rounded-lg transition">
+                            <i class="fa-solid fa-trash mr-1"></i> Eliminar
+                        </button>
+                    </div>
+                    <button onclick="showQRCode()" class="mt-2 w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-qrcode"></i> <span>DNI / QR Emergencia</span>
                     </button>
                 </div>
 
@@ -93,7 +104,7 @@
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-clock text-indigo-500 mr-2"></i> Próximas Citas y Turnos</h3>
-                        <button onclick="switchTab('appointments')" class="text-indigo-600 text-xs font-bold hover:underline">Ver todas</button>
+                        <button onclick="openAppointmentModal()" class="bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-700">+ Agendar Cita</button>
                     </div>
                     <div id="dashboardAppointmentsList" class="space-y-3"></div>
                 </div>
@@ -119,7 +130,10 @@
         <!-- SECCIÓN 3: CITAS Y ESTÉTICA -->
         <section id="sec-appointments" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <h3 class="font-bold text-lg text-slate-800 mb-6">📅 Calendario de Citas (Veterinario, Baño, Corte)</h3>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg text-slate-800">📅 Calendario de Citas (Veterinario, Baño, Corte)</h3>
+                    <button onclick="openAppointmentModal()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-indigo-700">+ Nueva Cita</button>
+                </div>
                 <div id="fullAppointmentsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </section>
@@ -128,7 +142,10 @@
         <section id="sec-finances" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
-                    <h3 class="font-bold text-lg text-slate-800 mb-4">💸 Registro de Gastos</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800">💸 Registro de Gastos</h3>
+                        <button onclick="openExpenseModal()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">+ Registrar Gasto</button>
+                    </div>
                     <div id="expensesList" class="space-y-3 max-h-80 overflow-y-auto"></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -177,6 +194,136 @@
         </section>
 
     </main>
+
+    <!-- MODAL AGREGAR / EDITAR MASCOTA -->
+    <div id="petModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4">
+            <h3 id="petModalTitle" class="font-bold text-lg text-slate-800">Agregar Mascota</h3>
+            <form onsubmit="savePetForm(event)" class="space-y-3">
+                <input type="hidden" id="petFormId">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Nombre</label>
+                    <input type="text" id="petFormName" required class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Especie</label>
+                        <select id="petFormSpecies" class="w-full border rounded-lg p-2 text-sm">
+                            <option value="Perro">Perro</option>
+                            <option value="Gato">Gato</option>
+                            <option value="Ave">Ave</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Raza</label>
+                        <input type="text" id="petFormBreed" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Edad</label>
+                        <input type="text" id="petFormAge" placeholder="3 años" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Peso (kg)</label>
+                        <input type="number" step="0.1" id="petFormWeight" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Chip</label>
+                        <input type="text" id="petFormChip" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">URL de Foto Avatar</label>
+                    <input type="url" id="petFormPhoto" placeholder="https://..." class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModal('petModal')" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR CITA -->
+    <div id="appointmentModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4">
+            <h3 class="font-bold text-lg text-slate-800">Agendar Nueva Cita</h3>
+            <form onsubmit="saveAppointmentForm(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Título / Motivo</label>
+                    <input type="text" id="appFormTitle" placeholder="Ej: Control y Vacuna" required class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Tipo</label>
+                        <select id="appFormType" class="w-full border rounded-lg p-2 text-sm">
+                            <option value="Veterinaria">Veterinaria</option>
+                            <option value="Peluquería">Peluquería</option>
+                            <option value="Baño">Baño</option>
+                            <option value="Vacuna">Vacuna</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Costo Estimado ($)</label>
+                        <input type="number" id="appFormCost" placeholder="0" class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Fecha</label>
+                        <input type="date" id="appFormDate" required class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Hora</label>
+                        <input type="time" id="appFormTime" required class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModal('appointmentModal')" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs">Cancelar</button>
+                    <button type="submit" class="bg-indigo-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Agendar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL AGREGAR GASTO -->
+    <div id="expenseModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4">
+            <h3 class="font-bold text-lg text-slate-800">Registrar Nuevo Gasto</h3>
+            <form onsubmit="saveExpenseForm(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Concepto</label>
+                    <input type="text" id="expFormConcept" placeholder="Ej: Bolsa Alimento 15kg" required class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Categoría</label>
+                        <select id="expFormCategory" class="w-full border rounded-lg p-2 text-sm">
+                            <option value="Comida">Comida</option>
+                            <option value="Medicina">Medicina</option>
+                            <option value="Juguetes">Juguetes</option>
+                            <option value="Veterinaria">Veterinaria</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Monto ($)</label>
+                        <input type="number" id="expFormAmount" required class="w-full border rounded-lg p-2 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Fecha</label>
+                    <input type="date" id="expFormDate" required class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModal('expenseModal')" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs">Cancelar</button>
+                    <button type="submit" class="bg-emerald-600 text-white font-bold px-4 py-2 rounded-lg text-xs">Guardar Gasto</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- MODAL QR -->
     <div id="qrModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
