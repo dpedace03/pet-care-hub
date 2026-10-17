@@ -115,8 +115,13 @@
                     <div id="healthRecordsList" class="space-y-3"></div>
                 </div>
                 <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-lg text-slate-800 mb-4">⚖️ Control de Peso (kg)</h3>
-                    <canvas id="weightChart" class="w-full h-48"></canvas>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800">⚖️ Control de Peso (kg)</h3>
+                        <button onclick="openWeightModal()" class="theme-bg text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">+ Registrar Peso</button>
+                    </div>
+                    <div class="h-48 relative">
+                        <canvas id="weightChart" class="w-full h-full"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
@@ -134,17 +139,19 @@
 
         <!-- SECCIÓN 4: GASTOS -->
         <section id="sec-finances" class="tab-content hidden space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg text-slate-800 mb-4">📊 Gastos por Categoría</h3>
+                    <div class="h-56 relative flex items-center justify-center">
+                        <canvas id="expensesChart" class="w-full h-full"></canvas>
+                    </div>
+                </div>
                 <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800">💸 Registro de Gastos</h3>
                         <button onclick="openExpenseModal()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow hover:bg-emerald-700">+ Registrar Gasto</button>
                     </div>
                     <div id="expensesList" class="space-y-3 max-h-80 overflow-y-auto"></div>
-                </div>
-                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-lg text-slate-800 mb-4">📊 Gastos por Categoría</h3>
-                    <canvas id="expensesChart" class="w-full h-48"></canvas>
                 </div>
             </div>
         </section>
@@ -189,7 +196,7 @@
 
     </main>
 
-    <!-- MODAL CONFIGURACIÓN / TEMAS -->
+    <!-- MODAL CONFIGURACIÓN / TEMAS Y PLANILLA -->
     <div id="configModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
         <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
@@ -241,11 +248,44 @@
                     <label class="block text-xs font-bold text-slate-600 mb-1">URL Web App Google Apps Script</label>
                     <input type="url" id="googleSheetUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border rounded-lg p-2 text-xs text-slate-700">
                 </div>
+
+                <!-- URL Google Sheet Directa / Acceso a Planilla -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">URL Directa a la Planilla de Google Sheets</label>
+                    <div class="flex space-x-2">
+                        <input type="url" id="googleSheetDirectUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full border rounded-lg p-2 text-xs text-slate-700">
+                        <button onclick="openGoogleSheetDirect()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg text-xs flex items-center space-x-1 shrink-0 shadow">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            <span>Abrir Planilla</span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="flex justify-end space-x-2 pt-2 border-t">
                 <button onclick="saveConfig()" class="w-full theme-bg text-white font-bold py-2 rounded-lg text-xs shadow">Guardar Cambios</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRAR / EDITAR PESO -->
+    <div id="weightModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-sm w-full space-y-4">
+            <h3 class="font-bold text-lg text-slate-800">Registrar Peso</h3>
+            <form onsubmit="saveWeightForm(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Peso (kg)</label>
+                    <input type="number" step="0.1" id="weightFormValue" required placeholder="Ej: 28.5" class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Fecha de Medición</label>
+                    <input type="date" id="weightFormDate" required class="w-full border rounded-lg p-2 text-sm">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModal('weightModal')" class="bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs">Cancelar</button>
+                    <button type="submit" class="theme-bg text-white font-bold px-4 py-2 rounded-lg text-xs shadow">Guardar Peso</button>
+                </div>
+            </form>
         </div>
     </div>
 

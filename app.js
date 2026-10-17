@@ -1,5 +1,5 @@
 // ============================================================================
-// PET CARE HUB - LÓGICA COMPLETA, TEMAS Y CUSTOMIZACIÓN DE COLORES
+// PET CARE HUB - LÓGICA COMPLETA ACTUALIZADA
 // ============================================================================
 
 const themes = {
@@ -29,11 +29,15 @@ const cardColors = {
     dark: "bg-slate-800 text-slate-100 border-slate-700"
 };
 
+let weightChartInstance = null;
+let expensesChartInstance = null;
+
 let state = {
     theme: "indigo",
     bgColor: "slate",
     cardColor: "white",
     googleSheetUrl: "",
+    googleSheetDirectUrl: "",
     activePetId: "pet-1",
     currentTab: "dashboard",
     pets: [
@@ -60,6 +64,14 @@ let state = {
             vet: { clinic: "Clínica Felina", doctor: "Dr. Martín Rossi", phone: "+541155667788", emergency: "+541188776655", address: "Av. Santa Fe 1200, CABA" }
         }
     ],
+    weightHistory: [
+        { petId: "pet-1", weight: 26.0, date: "2026-05-10" },
+        { petId: "pet-1", weight: 26.8, date: "2026-06-12" },
+        { petId: "pet-1", weight: 27.2, date: "2026-07-15" },
+        { petId: "pet-1", weight: 27.9, date: "2026-08-20" },
+        { petId: "pet-1", weight: 28.1, date: "2026-09-10" },
+        { petId: "pet-1", weight: 28.5, date: "2026-10-01" }
+    ],
     healthRecords: [
         { id: "h1", petId: "pet-1", title: "Vacuna Antirrábica", type: "Vacuna", date: "2026-03-15", notes: "Refuerzo anual ok" },
         { id: "h2", petId: "pet-1", title: "Pipeta Antipulgas", type: "Desparasitación", date: "2026-09-10", notes: "Aplicada correctamente" }
@@ -79,15 +91,14 @@ document.addEventListener("DOMContentLoaded", () => {
     applyAllThemeStyles();
     renderPetSelector();
     switchTab(state.currentTab || "dashboard");
-    initCharts();
 });
 
 function saveLocalData() {
-    localStorage.setItem("petcare_data_v3", JSON.stringify(state));
+    localStorage.setItem("petcare_data_v4", JSON.stringify(state));
 }
 
 function loadLocalData() {
-    const saved = localStorage.getItem("petcare_data_v3");
+    const saved = localStorage.getItem("petcare_data_v4");
     if (saved) state = JSON.parse(saved);
 }
 
@@ -117,24 +128,20 @@ function applyAllThemeStyles() {
     const bgClass = bgColors[state.bgColor] || bgColors.slate;
     const cardClass = cardColors[state.cardColor] || cardColors.white;
 
-    // 1. Aplicar color al Header
     const header = document.getElementById("appHeader");
     if (header) {
         header.className = `text-white shadow-lg sticky top-0 z-50 transition-colors duration-300 ${t.primary}`;
     }
 
-    // 2. Aplicar Fondo de Pantalla
     const body = document.getElementById("appBody");
     if (body) {
         body.className = `font-sans min-h-screen pb-12 transition-colors duration-300 ${bgClass}`;
     }
 
-    // 3. Aplicar Color de Tarjetas
     document.querySelectorAll(".custom-card").forEach(el => {
         el.className = `custom-card p-6 rounded-2xl shadow-sm border ${cardClass}`;
     });
 
-    // 4. Elementos con clase theme-bg
     document.querySelectorAll(".theme-bg").forEach(el => {
         el.className = el.className.replace(/bg-\w+-\d+/g, "");
         el.classList.add(t.primary);
@@ -145,14 +152,25 @@ function applyAllThemeStyles() {
 
 function openConfigModal() {
     document.getElementById("googleSheetUrlInput").value = state.googleSheetUrl || "";
+    document.getElementById("googleSheetDirectUrlInput").value = state.googleSheetDirectUrl || "";
     openModal("configModal");
 }
 
 function saveConfig() {
     state.googleSheetUrl = document.getElementById("googleSheetUrlInput").value.trim();
+    state.googleSheetDirectUrl = document.getElementById("googleSheetDirectUrlInput").value.trim();
     saveLocalData();
     closeModal("configModal");
     alert("¡Configuración guardada!");
+}
+
+function openGoogleSheetDirect() {
+    const url = document.getElementById("googleSheetDirectUrlInput").value.trim() || state.googleSheetDirectUrl;
+    if (url) {
+        window.open(url, '_blank');
+    } else {
+        alert("Por favor ingresá la URL de tu planilla de Google Sheets primero.");
+    }
 }
 
 // ============================================================================
@@ -179,9 +197,15 @@ function switchTab(tabName) {
     }
 
     if (tabName === 'dashboard') renderDashboard();
-    if (tabName === 'health') renderHealthSection();
+    if (tabName === 'health') {
+        renderHealthSection();
+        renderWeightChart();
+    }
     if (tabName === 'appointments') renderAppointmentsSection();
-    if (tabName === 'finances') renderExpensesSection();
+    if (tabName === 'finances') {
+        renderExpensesSection();
+        renderExpensesChart();
+    }
     if (tabName === 'vet') loadVetForm();
 }
 
@@ -204,7 +228,7 @@ function changeActivePet(petId) {
 }
 
 // ============================================================================
-// RENDER GENERAL
+// DASHBOARD
 // ============================================================================
 function renderDashboard() {
     const pet = getActivePet();
@@ -223,6 +247,119 @@ function renderDashboard() {
 
     list.innerHTML = petAppointments.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay citas agendadas.</p>` :
         petAppointments.map(a => renderAppointmentCard(a)).join("");
+}
+
+// ============================================================================
+// REGISTRO DE PESO (HISTORIAL Y GRÁFICO)
+// ============================================================================
+function openWeightModal() {
+    const pet = getActivePet();
+    document.getElementById("weightFormValue").value = pet ? pet.weight : "";
+    document.getElementById("weightFormDate").value = new Date().toISOString().split("T")[0];
+    openModal("weightModal");
+}
+
+function saveWeightForm(e) {
+    e.preventDefault();
+    const weightVal = parseFloat(document.getElementById("weightFormValue").value) || 0;
+    const weightDate = document.getElementById("weightFormDate").value;
+
+    const pet = getActivePet();
+    if (pet) {
+        pet.weight = weightVal;
+    }
+
+    if (!state.weightHistory) state.weightHistory = [];
+    state.weightHistory.push({
+        petId: state.activePetId,
+        weight: weightVal,
+        date: weightDate
+    });
+
+    saveLocalData();
+    closeModal("weightModal");
+    switchTab(state.currentTab);
+}
+
+function renderWeightChart() {
+    const ctx = document.getElementById("weightChart")?.getContext("2d");
+    if (!ctx) return;
+
+    if (weightChartInstance) {
+        weightChartInstance.destroy();
+    }
+
+    const history = (state.weightHistory || [])
+        .filter(w => w.petId === state.activePetId)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const labels = history.length ? history.map(w => w.date) : ["Actual"];
+    const data = history.length ? history.map(w => w.weight) : [getActivePet().weight || 0];
+
+    weightChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: labels,
+            datasets: [{
+                label: "Peso (kg)",
+                data: data,
+                borderColor: "#6366f1",
+                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// ============================================================================
+// GRÁFICO DE GASTOS POR CATEGORÍA
+// ============================================================================
+function renderExpensesChart() {
+    const ctx = document.getElementById("expensesChart")?.getContext("2d");
+    if (!ctx) return;
+
+    if (expensesChartInstance) {
+        expensesChartInstance.destroy();
+    }
+
+    const petExpenses = state.expenses.filter(e => e.petId === state.activePetId);
+    
+    const totals = {};
+    petExpenses.forEach(e => {
+        totals[e.category] = (totals[e.category] || 0) + e.amount;
+    });
+
+    const labels = Object.keys(totals);
+    const data = Object.values(totals);
+
+    if (labels.length === 0) {
+        labels.push("Sin Gastos");
+        data.push(1);
+    }
+
+    expensesChartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ["#10b981", "#ef4444", "#f59e0b", "#6366f1", "#8b5cf6", "#ec4899"]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+            }
+        }
+    });
 }
 
 // ============================================================================
@@ -477,7 +614,7 @@ function saveExpenseForm(e) {
 
     saveLocalData();
     renderExpensesSection();
-    initCharts();
+    renderExpensesChart();
     closeModal("expenseModal");
 }
 
@@ -491,7 +628,7 @@ function deleteExpense(id) {
         state.expenses = state.expenses.filter(e => e.id !== id);
         saveLocalData();
         renderExpensesSection();
-        initCharts();
+        renderExpensesChart();
     }
 }
 
@@ -545,7 +682,7 @@ function saveVetInfo(e) {
 async function syncAllToGoogleSheet() {
     const url = state.googleSheetUrl;
     if (!url) {
-        alert("Por favor configurá la URL de Google Apps Script en el botón de Configuración (⚙️).");
+        alert("Por favor configurá la URL Web App de Google Apps Script en la Configuración (⚙️).");
         openConfigModal();
         return;
     }
@@ -606,23 +743,4 @@ function showQRCode() {
     new QRCode(qrContainer, { text: `Mascota: ${pet.name}
 Especie: ${pet.species}`, width: 128, height: 128 });
     openModal("qrModal");
-}
-
-function initCharts() {
-    const ctxWeight = document.getElementById("weightChart")?.getContext("2d");
-    if (ctxWeight) {
-        new Chart(ctxWeight, {
-            type: "line",
-            data: { labels: ["Ene", "Mar", "May", "Jul", "Sep", "Oct"], datasets: [{ label: "Peso (kg)", data: [26.0, 26.8, 27.2, 27.9, 28.1, 28.5], borderColor: "#6366f1" }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-    const ctxExpenses = document.getElementById("expensesChart")?.getContext("2d");
-    if (ctxExpenses) {
-        new Chart(ctxExpenses, {
-            type: "doughnut",
-            data: { labels: ["Comida", "Medicina", "Juguetes"], datasets: [{ data: [45000, 8500, 22000], backgroundColor: ["#10b981", "#ef4444", "#f59e0b"] }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
 }
