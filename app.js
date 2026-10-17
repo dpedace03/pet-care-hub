@@ -1,5 +1,5 @@
 // ============================================================================
-// PET CARE HUB - LÓGICA COMPLETA ACTUALIZADA
+// PET CARE HUB - AUTO-SINCRONIZACIÓN CON GOOGLE SHEETS
 // ============================================================================
 
 const themes = {
@@ -94,11 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function saveLocalData() {
-    localStorage.setItem("petcare_data_v4", JSON.stringify(state));
+    localStorage.setItem("petcare_data_v5", JSON.stringify(state));
+    syncAllToGoogleSheet(false); // Sincronización automática silenciosa
 }
 
 function loadLocalData() {
-    const saved = localStorage.getItem("petcare_data_v4");
+    const saved = localStorage.getItem("petcare_data_v5");
     if (saved) state = JSON.parse(saved);
 }
 
@@ -178,7 +179,7 @@ function openGoogleSheetDirect() {
 // ============================================================================
 function switchTab(tabName) {
     state.currentTab = tabName;
-    saveLocalData();
+    localStorage.setItem("petcare_data_v5", JSON.stringify(state));
 
     document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
     
@@ -223,7 +224,7 @@ function renderPetSelector() {
 
 function changeActivePet(petId) {
     state.activePetId = petId;
-    saveLocalData();
+    localStorage.setItem("petcare_data_v5", JSON.stringify(state));
     switchTab(state.currentTab);
 }
 
@@ -677,29 +678,31 @@ function saveVetInfo(e) {
 }
 
 // ============================================================================
-// SINCRONIZACIÓN GOOGLE SHEETS
+// SINCRONIZACIÓN GOOGLE SHEETS (AUTOMÁTICA Y MANUAL)
 // ============================================================================
-async function syncAllToGoogleSheet() {
+async function syncAllToGoogleSheet(isManual = false) {
     const url = state.googleSheetUrl;
     if (!url) {
-        alert("Por favor configurá la URL Web App de Google Apps Script en la Configuración (⚙️).");
-        openConfigModal();
+        if (isManual) {
+            alert("Por favor configurá la URL Web App de Google Apps Script en la Configuración (⚙️).");
+            openConfigModal();
+        }
         return;
     }
 
     const payload = { pets: state.pets, appointments: state.appointments, expenses: state.expenses };
 
     try {
-        alert("Sincronizando datos con Google Sheets...");
+        if (isManual) alert("Sincronizando datos con Google Sheets...");
         await fetch(url, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        alert("¡Datos sincronizados exitosamente con Google Sheets!");
+        if (isManual) alert("¡Datos sincronizados exitosamente con Google Sheets!");
     } catch (error) {
-        alert("Error al sincronizar: " + error.toString());
+        if (isManual) alert("Error al sincronizar: " + error.toString());
     }
 }
 

@@ -16,7 +16,7 @@ function doPost(e) {
       return sheet;
     }
 
-    if (data.pets && data.pets.length > 0) {
+    if (data.pets) {
       var petsSheet = getOrCreateSheet("Mascotas", ["ID", "Nombre", "Especie", "Raza", "Edad", "Peso (kg)", "Microchip", "Foto URL", "Vet Clínica", "Vet Dr", "Vet Teléfono", "Vet Urgencias", "Vet Dirección"]);
       if (petsSheet.getLastRow() > 1) {
         petsSheet.getRange(2, 1, petsSheet.getLastRow() - 1, petsSheet.getLastColumn()).clearContent();
@@ -31,7 +31,7 @@ function doPost(e) {
       });
     }
 
-    if (data.appointments && data.appointments.length > 0) {
+    if (data.appointments) {
       var appSheet = getOrCreateSheet("Citas", ["ID Cita", "ID Mascota", "Mascota", "Título", "Tipo", "Fecha", "Hora", "Costo ($)", "Estado", "Observaciones"]);
       if (appSheet.getLastRow() > 1) {
         appSheet.getRange(2, 1, appSheet.getLastRow() - 1, appSheet.getLastColumn()).clearContent();
@@ -46,7 +46,7 @@ function doPost(e) {
       });
     }
 
-    if (data.expenses && data.expenses.length > 0) {
+    if (data.expenses) {
       var expSheet = getOrCreateSheet("Gastos", ["ID Gasto", "ID Mascota", "Mascota", "Concepto", "Categoría", "Monto ($)", "Fecha"]);
       if (expSheet.getLastRow() > 1) {
         expSheet.getRange(2, 1, expSheet.getLastRow() - 1, expSheet.getLastColumn()).clearContent();
@@ -61,7 +61,7 @@ function doPost(e) {
     }
 
     return ContentService
-      .createTextOutput(JSON.stringify({ "status": "success", "message": "¡Sincronización completa!" }))
+      .createTextOutput(JSON.stringify({ "status": "success", "message": "¡Sincronización automática completa!" }))
       .setMimeType(ContentService.MimeType.JSON);
 
   } catch (err) {

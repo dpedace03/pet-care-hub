@@ -32,7 +32,7 @@
                 <button onclick="openPetModal()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3 py-1.5 rounded-lg text-sm transition">
                     + Mascota
                 </button>
-                <button onclick="syncAllToGoogleSheet()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm transition flex items-center space-x-1 shadow">
+                <button onclick="syncAllToGoogleSheet(true)" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-sm transition flex items-center space-x-1 shadow">
                     <i class="fa-solid fa-file-excel"></i>
                     <span class="hidden sm:inline">Sincronizar</span>
                 </button>
@@ -245,7 +245,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">URL Web App Google Apps Script</label>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">URL Web App Google Apps Script (Auto-Sync)</label>
                     <input type="url" id="googleSheetUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border rounded-lg p-2 text-xs text-slate-700">
                 </div>
 
