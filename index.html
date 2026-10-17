@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Care Hub - Gestor de Mascotas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- QRCode.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .active-tab { border-bottom: 3px solid #6366f1; color: #4f46e5; font-weight: 600; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid font-bold text-2xl text-amber-300">🐾</i>
+                <h1 class="text-xl font-bold tracking-wide">Pet Care Hub</h1>
+            </div>
+            <!-- Selector de Mascota Activa -->
+            <div class="flex items-center space-x-2">
+                <select id="petSelector" onchange="changeActivePet(this.value)" class="bg-indigo-700 text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-300">
+                    <!-- Se cargará dinámicamente -->
+                </select>
+                <button onclick="openPetModal()" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3 py-1.5 rounded-lg text-sm transition">
+                    + Nueva
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-6xl mx-auto px-4 mt-6">
+
+        <!-- Tabs Navigation -->
+        <nav class="flex overflow-x-auto space-x-6 border-b border-slate-300 mb-6 bg-white rounded-t-xl px-4 pt-2 shadow-sm">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn py-3 px-2 flex items-center space-x-2 active-tab">
+                <i class="fa-solid fa-house"></i> <span>General</span>
+            </button>
+            <button onclick="switchTab('health')" id="tab-health" class="tab-btn py-3 px-2 flex items-center space-x-2 text-slate-500">
+                <i class="fa-solid fa-heart-pulse"></i> <span>Salud y Vacunas</span>
+            </button>
+            <button onclick="switchTab('appointments')" id="tab-appointments" class="tab-btn py-3 px-2 flex items-center space-x-2 text-slate-500">
+                <i class="fa-solid fa-calendar-check"></i> <span>Citas y Estética</span>
+            </button>
+            <button onclick="switchTab('finances')" id="tab-finances" class="tab-btn py-3 px-2 flex items-center space-x-2 text-slate-500">
+                <i class="fa-solid fa-wallet"></i> <span>Gastos</span>
+            </button>
+            <button onclick="switchTab('vet')" id="tab-vet" class="tab-btn py-3 px-2 flex items-center space-x-2 text-slate-500">
+                <i class="fa-solid fa-user-doctor"></i> <span>Veterinaria</span>
+            </button>
+        </nav>
+
+        <!-- SECCIÓN 1: DASHBOARD GENERAL -->
+        <section id="sec-dashboard" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Tarjeta Perfil Mascota -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center">
+                    <img id="petAvatar" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=400" class="w-28 h-28 rounded-full object-cover shadow-md border-4 border-indigo-100 mb-3" alt="Pet">
+                    <h2 id="petName" class="text-2xl font-bold text-slate-800">--</h2>
+                    <p id="petBreed" class="text-sm text-slate-500">--</p>
+                    <div class="mt-4 w-full grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <div><span class="text-slate-400 block">Edad</span><strong id="petAge">--</strong></div>
+                        <div><span class="text-slate-400 block">Peso</span><strong id="petWeight">-- kg</strong></div>
+                        <div><span class="text-slate-400 block">Chip</span><strong id="petChip">--</strong></div>
+                        <div><span class="text-slate-400 block">Especie</span><strong id="petSpecies">--</strong></div>
+                    </div>
+                    <button onclick="showQRCode()" class="mt-4 w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-qrcode"></i> <span>Ver DNI / QR de Emergencia</span>
+                    </button>
+                </div>
+
+                <!-- Resumen de Citas Próximas -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-clock text-indigo-500 mr-2"></i> Próximas Citas y Turnos</h3>
+                        <button onclick="switchTab('appointments')" class="text-indigo-600 text-xs font-bold hover:underline">Ver todas</button>
+                    </div>
+                    <div id="dashboardAppointmentsList" class="space-y-3">
+                        <!-- Se llena con JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: SALUD Y VACUNAS -->
+        <section id="sec-health" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Vacunas / Desparasitación -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800">💉 Libreta Sanitaria</h3>
+                        <button onclick="openHealthModal()" class="bg-indigo-50 text-indigo-600 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-indigo-100">+ Agregar</button>
+                    </div>
+                    <div id="healthRecordsList" class="space-y-3">
+                        <!-- Lista vacunas -->
+                    </div>
+                </div>
+                <!-- Gráfico de Control de Peso -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg text-slate-800 mb-4">⚖️ Histórico de Peso (kg)</h3>
+                    <canvas id="weightChart" class="w-full h-48"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: CITAS Y ESTÉTICA -->
+        <section id="sec-appointments" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-lg text-slate-800">📅 Calendario de Citas (Veterinario, Baño, Corte)</h3>
+                    <button onclick="openAppointmentModal()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-indigo-700">+ Agendar Cita</button>
+                </div>
+                <div id="fullAppointmentsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cards de Citas -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: GASTOS -->
+        <section id="sec-finances" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-800">💸 Registro de Gastos</h3>
+                        <button onclick="openExpenseModal()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-emerald-700">+ Registrar Gasto</button>
+                    </div>
+                    <div id="expensesList" class="space-y-3 max-h-80 overflow-y-auto">
+                        <!-- Lista de gastos -->
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg text-slate-800 mb-4">📊 Gastos por Categoría</h3>
+                    <canvas id="expensesChart" class="w-full h-48"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 5: VETERINARIA DE CABECERA -->
+        <section id="sec-vet" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
+                <h3 class="font-bold text-xl text-slate-800 mb-4 flex items-center">
+                    <i class="fa-solid fa-hospital-user text-red-500 mr-2"></i> Veterinaria de Cabecera
+                </h3>
+                <form id="vetForm" onsubmit="saveVetInfo(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nombre de la Clínica</label>
+                        <input type="text" id="vetClinicName" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Clínica San Antón" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Veterinario Principal</label>
+                            <input type="text" id="vetDoctorName" class="w-full border rounded-lg p-2 text-sm" placeholder="Dr. Pérez">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Teléfono Directo</label>
+                            <input type="tel" id="vetPhone" class="w-full border rounded-lg p-2 text-sm" placeholder="+54 11 ...">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Urgencias 24h</label>
+                            <input type="tel" id="vetEmergencyPhone" class="w-full border rounded-lg p-2 text-sm text-red-600 font-bold" placeholder="Urgencias...">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Dirección</label>
+                            <input type="text" id="vetAddress" class="w-full border rounded-lg p-2 text-sm" placeholder="Av. Principal 1234">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700 transition">
+                        Guardar Datos Veterinarios
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL QR -->
+    <div id="qrModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white p-6 rounded-2xl max-w-sm w-full text-center space-y-4">
+            <h3 class="font-bold text-lg text-slate-800">DNI / Código QR de Emergencia</h3>
+            <p class="text-xs text-slate-500">Escaneá este código para ver los datos de contacto y emergencias de la mascota.</p>
+            <div id="qrcode" class="flex justify-center py-2"></div>
+            <button onclick="closeModal('qrModal')" class="w-full bg-slate-200 text-slate-800 font-bold py-2 rounded-lg text-xs">Cerrar</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
