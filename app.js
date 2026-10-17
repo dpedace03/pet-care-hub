@@ -1,44 +1,55 @@
 // ============================================================================
-// CONFIGURACIÓN DE SUPABASE
-// Reemplaza con los valores de tu panel en Supabase (Project Settings > API)
+// PET CARE HUB - LÓGICA GENERAL Y SINCRONIZACIÓN GOOGLE SHEETS
 // ============================================================================
-const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-const SUPABASE_ANON_KEY = 'TU_CLAVE_ANON_PUBLICA';
 
-// Inicialización del cliente Supabase (descomentar cuando ingreses las claves)
-// const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ============================================================================
-// ESTADO LOCAL Y DATOS DEMO
-// ============================================================================
 let state = {
+    googleSheetUrl: "",
     activePetId: "pet-1",
     pets: [
         {
             id: "pet-1",
             name: "Max",
-            species: "Dog",
+            species: "Perro",
             breed: "Golden Retriever",
             age: "3 años",
             weight: 28.5,
             chip: "981020000123456",
             photo: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400",
             vet: {
-                clinic: "Veterinaria Central",
+                clinic: "Veterinaria San Antón",
                 doctor: "Dra. Valeria Gómez",
                 phone: "+541144332211",
                 emergency: "+541199887766",
                 address: "Av. Cabildo 2400, CABA"
             }
+        },
+        {
+            id: "pet-2",
+            name: "Luna",
+            species: "Gato",
+            breed: "Siamesa",
+            age: "2 años",
+            weight: 4.2,
+            chip: "981020000987654",
+            photo: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400",
+            vet: {
+                clinic: "Clínica Felina",
+                doctor: "Dr. Martín Rossi",
+                phone: "+541155667788",
+                emergency: "+541188776655",
+                address: "Av. Santa Fe 1200, CABA"
+            }
         }
     ],
     appointments: [
-        { id: "a1", petId: "pet-1", title: "Corte de pelo y Baño", type: "Grooming", date: "2026-10-25", time: "15:00", cost: 12000 },
-        { id: "a2", petId: "pet-1", title: "Control Anual y Vacuna", type: "Vet", date: "2026-11-02", time: "10:30", cost: 18000 }
+        { id: "a1", petId: "pet-1", title: "Corte de pelo y Baño", type: "Peluquería", date: "2026-10-25", time: "15:00", cost: 12000 },
+        { id: "a2", petId: "pet-1", title: "Control Anual y Vacuna", type: "Veterinaria", date: "2026-11-02", time: "10:30", cost: 18000 },
+        { id: "a3", petId: "pet-2", title: "Desparasitaciones", type: "Veterinaria", date: "2026-10-28", time: "11:00", cost: 8500 }
     ],
     expenses: [
-        { id: "e1", petId: "pet-1", concept: "Alimento Balanceado 15kg", category: "Food", amount: 45000, date: "2026-10-01" },
-        { id: "e2", petId: "pet-1", concept: "Pipeta Antipulgas", category: "Medicine", amount: 8500, date: "2026-10-05" }
+        { id: "e1", petId: "pet-1", concept: "Alimento Balanceado 15kg", category: "Comida", amount: 45000, date: "2026-10-01" },
+        { id: "e2", petId: "pet-1", concept: "Pipeta Antipulgas", category: "Medicina", amount: 8500, date: "2026-10-05" },
+        { id: "e3", petId: "pet-2", concept: "Rascador Torre", category: "Juguetes", amount: 22000, date: "2026-10-10" }
     ]
 };
 
@@ -50,16 +61,68 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPetSelector();
     renderDashboard();
     initCharts();
+
+    // Cargar URL guardada si existe
+    if (state.googleSheetUrl) {
+        const inputUrl = document.getElementById("googleSheetUrlInput");
+        if (inputUrl) inputUrl.value = state.googleSheetUrl;
+    }
 });
 
-// Guardar/Cargar en LocalStorage (Sincronizable con Supabase)
 function saveLocalData() {
     localStorage.setItem("petcare_data", JSON.stringify(state));
 }
 
 function loadLocalData() {
     const saved = localStorage.getItem("petcare_data");
-    if (saved) state = JSON.parse(saved);
+    if (saved) {
+        state = JSON.parse(saved);
+    }
+}
+
+function saveGoogleSheetUrl() {
+    const url = document.getElementById("googleSheetUrlInput").value.trim();
+    if (!url) {
+        alert("Por favor ingresá una URL válida de Google Apps Script.");
+        return;
+    }
+    state.googleSheetUrl = url;
+    saveLocalData();
+    alert("¡URL de Google Apps Script guardada correctamente!");
+}
+
+// ============================================================================
+// SINCRONIZACIÓN A GOOGLE SHEETS
+// ============================================================================
+async function syncAllToGoogleSheet() {
+    const url = state.googleSheetUrl || document.getElementById("googleSheetUrlInput").value.trim();
+
+    if (!url) {
+        alert("Por favor pegá primero la URL de tu Web App de Google Apps Script.");
+        return;
+    }
+
+    const payload = {
+        pets: state.pets,
+        appointments: state.appointments,
+        expenses: state.expenses
+    };
+
+    try {
+        alert("Enviando todos los datos a Google Sheets... Aguardá unos segundos.");
+
+        await fetch(url, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        alert("¡Sincronización enviada con éxito! Revisá tu planilla de Google Sheets. Las pestañas 'Mascotas', 'Citas' y 'Gastos' fueron actualizadas.");
+    } catch (error) {
+        console.error("Error al sincronizar con Google Sheets:", error);
+        alert("Hubo un error al intentar sincronizar: " + error.toString());
+    }
 }
 
 // ============================================================================
@@ -72,19 +135,22 @@ function switchTab(tabName) {
         el.classList.add("text-slate-500");
     });
 
-    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
-    const activeBtn = document.getElementById(`tab-${tabName}`);
-    activeBtn.classList.add("active-tab");
-    activeBtn.classList.remove("text-slate-500");
+    const activeSec = document.getElementById(`sec-${tabName}`);
+    if (activeSec) activeSec.classList.remove("hidden");
 
-    if (tabName === 'health') renderHealthSection();
+    const activeBtn = document.getElementById(`tab-${tabName}`);
+    if (activeBtn) {
+        activeBtn.classList.add("active-tab");
+        activeBtn.classList.remove("text-slate-500");
+    }
+
     if (tabName === 'appointments') renderAppointmentsSection();
     if (tabName === 'finances') renderExpensesSection();
     if (tabName === 'vet') loadVetForm();
 }
 
 // ============================================================================
-// RENDERIZADO GENERAL Y MASCOTAS
+// RENDERIZADO Y MASCOTAS
 // ============================================================================
 function getActivePet() {
     return state.pets.find(p => p.id === state.activePetId) || state.pets[0];
@@ -92,7 +158,8 @@ function getActivePet() {
 
 function renderPetSelector() {
     const selector = document.getElementById("petSelector");
-    selector.innerHTML = state.pets.map(p => 
+    if (!selector) return;
+    selector.innerHTML = state.pets.map(p =>
         `<option value="${p.id}" ${p.id === state.activePetId ? 'selected' : ''}>${p.name}</option>`
     ).join("");
 }
@@ -115,12 +182,13 @@ function renderDashboard() {
     document.getElementById("petSpecies").innerText = pet.species;
     document.getElementById("petAvatar").src = pet.photo;
 
-    // Próximas Citas
     const list = document.getElementById("dashboardAppointmentsList");
+    if (!list) return;
+
     const petAppointments = state.appointments.filter(a => a.petId === pet.id);
-    
+
     if (petAppointments.length === 0) {
-        list.innerHTML = `<p class="text-xs text-slate-400 italic py-2">No hay citas pendientes agendadas.</p>`;
+        list.innerHTML = `<p class="text-xs text-slate-400 italic py-2">No hay citas agendadas.</p>`;
     } else {
         list.innerHTML = petAppointments.map(a => `
             <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
@@ -139,8 +207,46 @@ function renderDashboard() {
     }
 }
 
+function renderAppointmentsSection() {
+    const list = document.getElementById("fullAppointmentsList");
+    if (!list) return;
+
+    list.innerHTML = state.appointments.map(a => {
+        const pet = state.pets.find(p => p.id === a.petId);
+        return `
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs font-bold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">${a.type}</span>
+                    <span class="text-xs text-slate-400">Mascota: ${pet ? pet.name : 'N/A'}</span>
+                </div>
+                <h4 class="font-bold text-base text-slate-800">${a.title}</h4>
+                <p class="text-xs text-slate-600"><i class="fa-regular fa-clock mr-1"></i>${a.date} a las ${a.time} hs</p>
+                <p class="text-xs font-bold text-emerald-600">Costo: $${a.cost}</p>
+            </div>
+        `;
+    }).join("");
+}
+
+function renderExpensesSection() {
+    const list = document.getElementById("expensesList");
+    if (!list) return;
+
+    list.innerHTML = state.expenses.map(e => {
+        const pet = state.pets.find(p => p.id === e.petId);
+        return `
+            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <div>
+                    <h4 class="font-bold text-sm text-slate-800">${e.concept}</h4>
+                    <span class="text-xs text-slate-400">${e.category} • ${pet ? pet.name : 'N/A'} • ${e.date}</span>
+                </div>
+                <span class="font-bold text-slate-800">$${e.amount}</span>
+            </div>
+        `;
+    }).join("");
+}
+
 // ============================================================================
-// VETERINARIA DE CABECERA
+// DATOS VETERINARIOS
 // ============================================================================
 function loadVetForm() {
     const pet = getActivePet();
@@ -163,11 +269,11 @@ function saveVetInfo(e) {
         address: document.getElementById("vetAddress").value
     };
     saveLocalData();
-    alert("¡Datos veterinarios guardados exitosamente!");
+    alert("¡Datos veterinarios guardados con éxito!");
 }
 
 // ============================================================================
-// EXPORTACIÓN A CALENDARIO (.ICS)
+// UTILIDADES (EXPORTAR ICS Y CÓDIGO QR)
 // ============================================================================
 function downloadICS(title, date, time) {
     const start = new Date(`${date}T${time}:00`).toISOString().replace(/-|:|\.\d\d\d/g, "");
@@ -182,31 +288,34 @@ function downloadICS(title, date, time) {
     document.body.removeChild(link);
 }
 
-// ============================================================================
-// DNI / QR CODE
-// ============================================================================
 function showQRCode() {
     const pet = getActivePet();
     const qrContainer = document.getElementById("qrcode");
-    qrContainer.innerHTML = "";
+    if (!qrContainer) return;
     
-    const info = `Mascota: ${pet.name}\nDueño: Contacto registrado\nUrgencia Vet: ${pet.vet?.emergency || 'Sin registrar'}`;
+    qrContainer.innerHTML = "";
+    const info = `Mascota: ${pet.name}\nEspecie: ${pet.species}\nRaza: ${pet.breed}\nUrgencia Vet: ${pet.vet?.emergency || 'N/A'}`;
     new QRCode(qrContainer, { text: info, width: 128, height: 128 });
-
-    document.getElementById("qrModal").classList.remove("hidden");
-    document.getElementById("qrModal").classList.add("flex");
+    
+    const modal = document.getElementById("qrModal");
+    if (modal) {
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+    }
 }
 
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add("hidden");
-    document.getElementById(modalId).classList.remove("flex");
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+    }
 }
 
 // ============================================================================
 // GRÁFICOS (CHART.JS)
 // ============================================================================
 function initCharts() {
-    // Gráfico de Peso
     const ctxWeight = document.getElementById("weightChart")?.getContext("2d");
     if (ctxWeight) {
         new Chart(ctxWeight, {
@@ -225,16 +334,15 @@ function initCharts() {
         });
     }
 
-    // Gráfico de Gastos
     const ctxExpenses = document.getElementById("expensesChart")?.getContext("2d");
     if (ctxExpenses) {
         new Chart(ctxExpenses, {
             type: "doughnut",
             data: {
-                labels: ["Comida", "Medicina", "Estética", "Veterinaria"],
+                labels: ["Comida", "Medicina", "Juguetes"],
                 datasets: [{
-                    data: [45000, 8500, 12000, 18000],
-                    backgroundColor: ["#10b981", "#ef4444", "#f59e0b", "#6366f1"]
+                    data: [45000, 8500, 22000],
+                    backgroundColor: ["#10b981", "#ef4444", "#f59e0b"]
                 }]
             },
             options: { responsive: true, maintainAspectRatio: false }
