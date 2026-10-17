@@ -1,5 +1,5 @@
 // ============================================================================
-// PET CARE HUB - LÓGICA COMPLETA Y TEMAS
+// PET CARE HUB - LÓGICA COMPLETA, TEMAS Y CUSTOMIZACIÓN DE COLORES
 // ============================================================================
 
 const themes = {
@@ -11,8 +11,28 @@ const themes = {
     slate: { primary: "bg-slate-800", activeTabBg: "bg-slate-800", activeTabFg: "text-white" }
 };
 
+const bgColors = {
+    slate: "bg-slate-100 text-slate-800",
+    blue: "bg-blue-50 text-slate-800",
+    emerald: "bg-emerald-50 text-slate-800",
+    amber: "bg-amber-50 text-slate-800",
+    purple: "bg-purple-50 text-slate-800",
+    dark: "bg-slate-900 text-slate-100"
+};
+
+const cardColors = {
+    white: "bg-white text-slate-800 border-slate-200",
+    slate: "bg-slate-50 text-slate-800 border-slate-300",
+    indigo: "bg-indigo-50/80 text-slate-900 border-indigo-200",
+    emerald: "bg-emerald-50/80 text-slate-900 border-emerald-200",
+    amber: "bg-amber-50/80 text-slate-900 border-amber-200",
+    dark: "bg-slate-800 text-slate-100 border-slate-700"
+};
+
 let state = {
     theme: "indigo",
+    bgColor: "slate",
+    cardColor: "white",
     googleSheetUrl: "",
     activePetId: "pet-1",
     currentTab: "dashboard",
@@ -56,38 +76,65 @@ let state = {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadLocalData();
-    applyTheme(state.theme || "indigo");
+    applyAllThemeStyles();
     renderPetSelector();
     switchTab(state.currentTab || "dashboard");
     initCharts();
 });
 
 function saveLocalData() {
-    localStorage.setItem("petcare_data_v2", JSON.stringify(state));
+    localStorage.setItem("petcare_data_v3", JSON.stringify(state));
 }
 
 function loadLocalData() {
-    const saved = localStorage.getItem("petcare_data_v2");
+    const saved = localStorage.getItem("petcare_data_v3");
     if (saved) state = JSON.parse(saved);
 }
 
 // ============================================================================
-// TEMAS DE COLOR
+// TEMAS Y COLORES DINÁMICOS
 // ============================================================================
 function setTheme(themeName) {
     state.theme = themeName;
     saveLocalData();
-    applyTheme(themeName);
+    applyAllThemeStyles();
 }
 
-function applyTheme(themeName) {
-    const t = themes[themeName] || themes.indigo;
-    const header = document.getElementById("appHeader");
-    
-    // Resetear clases de color del header
-    header.className = `text-white shadow-lg sticky top-0 z-50 transition-colors duration-300 ${t.primary}`;
+function setBgColor(bgColorName) {
+    state.bgColor = bgColorName;
+    saveLocalData();
+    applyAllThemeStyles();
+}
 
-    // Estilos dinámicos para elementos con clase theme-bg
+function setCardColor(cardColorName) {
+    state.cardColor = cardColorName;
+    saveLocalData();
+    applyAllThemeStyles();
+}
+
+function applyAllThemeStyles() {
+    const t = themes[state.theme] || themes.indigo;
+    const bgClass = bgColors[state.bgColor] || bgColors.slate;
+    const cardClass = cardColors[state.cardColor] || cardColors.white;
+
+    // 1. Aplicar color al Header
+    const header = document.getElementById("appHeader");
+    if (header) {
+        header.className = `text-white shadow-lg sticky top-0 z-50 transition-colors duration-300 ${t.primary}`;
+    }
+
+    // 2. Aplicar Fondo de Pantalla
+    const body = document.getElementById("appBody");
+    if (body) {
+        body.className = `font-sans min-h-screen pb-12 transition-colors duration-300 ${bgClass}`;
+    }
+
+    // 3. Aplicar Color de Tarjetas
+    document.querySelectorAll(".custom-card").forEach(el => {
+        el.className = `custom-card p-6 rounded-2xl shadow-sm border ${cardClass}`;
+    });
+
+    // 4. Elementos con clase theme-bg
     document.querySelectorAll(".theme-bg").forEach(el => {
         el.className = el.className.replace(/bg-\w+-\d+/g, "");
         el.classList.add(t.primary);
@@ -109,7 +156,7 @@ function saveConfig() {
 }
 
 // ============================================================================
-// NAVEGACIÓN Y TABS (BOTONES)
+// NAVEGACIÓN Y TABS
 // ============================================================================
 function switchTab(tabName) {
     state.currentTab = tabName;
@@ -123,7 +170,9 @@ function switchTab(tabName) {
         btn.className = "tab-btn py-3 px-3 rounded-xl font-bold text-sm shadow-sm flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 transition bg-white text-slate-600 hover:bg-slate-50";
     });
 
-    document.getElementById(`sec-${tabName}`).classList.remove("hidden");
+    const activeSec = document.getElementById(`sec-${tabName}`);
+    if (activeSec) activeSec.classList.remove("hidden");
+
     const activeBtn = document.getElementById(`tab-${tabName}`);
     if (activeBtn) {
         activeBtn.className = `tab-btn py-3 px-3 rounded-xl font-bold text-sm shadow flex flex-col sm:flex-row items-center justify-center space-y-1 sm:space-y-0 sm:space-x-2 transition ${t.activeTabBg} ${t.activeTabFg}`;
@@ -142,6 +191,7 @@ function getActivePet() {
 
 function renderPetSelector() {
     const selector = document.getElementById("petSelector");
+    if (!selector) return;
     selector.innerHTML = state.pets.map(p =>
         `<option value="${p.id}" ${p.id === state.activePetId ? 'selected' : ''}>${p.name}</option>`
     ).join("");
@@ -243,7 +293,7 @@ function deleteCurrentPet() {
 }
 
 // ============================================================================
-// CRUD CITAS (ESTADOS + NOTAS + EDITAR)
+// CRUD CITAS
 // ============================================================================
 function openAppointmentModal(appToEdit = null) {
     document.getElementById("appModalTitle").innerText = appToEdit ? "Editar Cita" : "Agendar Cita";
@@ -303,14 +353,14 @@ function renderAppointmentCard(a) {
     };
 
     return `
-        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+        <div class="p-4 bg-slate-50/50 rounded-xl border border-slate-200 space-y-2">
             <div class="flex justify-between items-center">
                 <span class="text-xs font-bold px-2.5 py-1 bg-indigo-100 text-indigo-700 rounded-full">${a.type}</span>
                 <span class="text-xs font-bold px-2 py-0.5 rounded-md border ${statusColors[a.status] || statusColors.Nuevo}">${a.status}</span>
             </div>
             <h4 class="font-bold text-base text-slate-800">${a.title}</h4>
             <p class="text-xs text-slate-600"><i class="fa-regular fa-calendar mr-1"></i>${a.date} - ${a.time} hs</p>
-            ${a.notes ? `<p class="text-xs text-slate-500 bg-white p-2 rounded border border-slate-100"><i class="fa-solid fa-comment mr-1 text-slate-400"></i>${a.notes}</p>` : ''}
+            ${a.notes ? `<p class="text-xs text-slate-500 bg-white/80 p-2 rounded border border-slate-100"><i class="fa-solid fa-comment mr-1 text-slate-400"></i>${a.notes}</p>` : ''}
             <div class="flex justify-between items-center pt-2 border-t border-slate-200">
                 <span class="text-xs font-bold text-emerald-600">Costo: $${a.cost}</span>
                 <div class="flex items-center space-x-2">
@@ -382,7 +432,7 @@ function renderHealthSection() {
     const records = state.healthRecords.filter(h => h.petId === state.activePetId);
     list.innerHTML = records.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay registros cargados.</p>` :
         records.map(h => `
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="flex justify-between items-center p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <div>
                     <span class="text-xs font-bold px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded">${h.type}</span>
                     <h4 class="font-bold text-sm text-slate-800 mt-1">${h.title}</h4>
@@ -450,7 +500,7 @@ function renderExpensesSection() {
     const petExpenses = state.expenses.filter(e => e.petId === state.activePetId);
     list.innerHTML = petExpenses.length === 0 ? `<p class="text-xs text-slate-400 italic">No hay gastos registrados.</p>` :
         petExpenses.map(e => `
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+            <div class="flex justify-between items-center p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <div>
                     <h4 class="font-bold text-sm text-slate-800">${e.concept}</h4>
                     <span class="text-xs text-slate-400">${e.category} • ${e.date}</span>

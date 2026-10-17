@@ -12,8 +12,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        .custom-card { transition: background-color 0.3s ease, border-color 0.3s ease; }
+    </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12 transition-colors duration-300">
+<body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12 transition-colors duration-300">
 
     <!-- Header / Navbar -->
     <header id="appHeader" class="bg-indigo-600 text-white shadow-lg sticky top-0 z-50 transition-colors duration-300">
@@ -67,7 +70,7 @@
         <section id="sec-dashboard" class="tab-content space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Tarjeta Perfil Mascota -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center">
                     <img id="petAvatar" src="" class="w-28 h-28 rounded-full object-cover shadow-md border-4 border-slate-100 mb-3" alt="Pet">
                     <h2 id="petName" class="text-2xl font-bold text-slate-800">--</h2>
                     <p id="petBreed" class="text-sm text-slate-500">--</p>
@@ -91,7 +94,7 @@
                 </div>
 
                 <!-- Resumen de Citas Próximas -->
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-clock text-indigo-500 mr-2"></i> Próximas Citas</h3>
                         <button onclick="openAppointmentModal()" class="theme-bg text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">+ Agendar Cita</button>
@@ -104,14 +107,14 @@
         <!-- SECCIÓN 2: SALUD Y VACUNAS -->
         <section id="sec-health" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800">💉 Libreta Sanitaria</h3>
                         <button onclick="openHealthModal()" class="theme-bg text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow">+ Registro</button>
                     </div>
                     <div id="healthRecordsList" class="space-y-3"></div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="font-bold text-lg text-slate-800 mb-4">⚖️ Control de Peso (kg)</h3>
                     <canvas id="weightChart" class="w-full h-48"></canvas>
                 </div>
@@ -120,7 +123,7 @@
 
         <!-- SECCIÓN 3: CITAS Y ESTÉTICA -->
         <section id="sec-appointments" class="tab-content hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="font-bold text-lg text-slate-800">📅 Calendario de Citas y Turnos</h3>
                     <button onclick="openAppointmentModal()" class="theme-bg text-white text-xs font-bold px-4 py-2 rounded-lg shadow">+ Nueva Cita</button>
@@ -132,14 +135,14 @@
         <!-- SECCIÓN 4: GASTOS -->
         <section id="sec-finances" class="tab-content hidden space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200 md:col-span-2">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg text-slate-800">💸 Registro de Gastos</h3>
                         <button onclick="openExpenseModal()" class="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow hover:bg-emerald-700">+ Registrar Gasto</button>
                     </div>
                     <div id="expensesList" class="space-y-3 max-h-80 overflow-y-auto"></div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="font-bold text-lg text-slate-800 mb-4">📊 Gastos por Categoría</h3>
                     <canvas id="expensesChart" class="w-full h-48"></canvas>
                 </div>
@@ -148,7 +151,7 @@
 
         <!-- SECCIÓN 5: VETERINARIA -->
         <section id="sec-vet" class="tab-content hidden space-y-6">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
+            <div class="custom-card bg-white p-6 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto">
                 <h3 class="font-bold text-xl text-slate-800 mb-4 flex items-center">
                     <i class="fa-solid fa-hospital-user text-red-500 mr-2"></i> Veterinaria de Cabecera
                 </h3>
@@ -188,22 +191,49 @@
 
     <!-- MODAL CONFIGURACIÓN / TEMAS -->
     <div id="configModal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 p-4">
-        <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4">
+        <div class="bg-white p-6 rounded-2xl max-w-md w-full space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-gear text-slate-600 mr-2"></i> Configuración</h3>
                 <button onclick="closeModal('configModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             
             <div class="space-y-4">
+                <!-- Tema Principal / Encabezado -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-2">Tema de Colores de la App</label>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Color del Encabezado y Botones Principales</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <button onclick="setTheme('indigo')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-indigo-600 text-white border-indigo-700">Indigo</button>
+                        <button onclick="setTheme('indigo')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-indigo-600 text-white border-indigo-700">Índigo</button>
                         <button onclick="setTheme('emerald')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-emerald-600 text-white border-emerald-700">Esmeralda</button>
                         <button onclick="setTheme('rose')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-rose-600 text-white border-rose-700">Rosa</button>
                         <button onclick="setTheme('amber')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-amber-500 text-white border-amber-600">Ámbar</button>
                         <button onclick="setTheme('sky')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-sky-600 text-white border-sky-700">Celeste</button>
                         <button onclick="setTheme('slate')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-slate-800 text-white border-slate-900">Oscuro</button>
+                    </div>
+                </div>
+
+                <!-- Color de Fondo de Pantalla -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Color de Fondo de Pantalla</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setBgColor('slate')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-slate-100 text-slate-800 border-slate-300">Gris Claro</button>
+                        <button onclick="setBgColor('blue')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-blue-50 text-blue-900 border-blue-200">Azul Suave</button>
+                        <button onclick="setBgColor('emerald')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-emerald-50 text-emerald-900 border-emerald-200">Menta</button>
+                        <button onclick="setBgColor('amber')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-amber-50 text-amber-900 border-amber-200">Crema</button>
+                        <button onclick="setBgColor('purple')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-purple-50 text-purple-900 border-purple-200">Lavanda</button>
+                        <button onclick="setBgColor('dark')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-slate-900 text-white border-slate-700">Modo Noche</button>
+                    </div>
+                </div>
+
+                <!-- Color de Fondo de Tarjetas (Cards) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-2">Color de Tarjetas (Cards)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setCardColor('white')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-white text-slate-800 border-slate-200">Blanco</button>
+                        <button onclick="setCardColor('slate')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-slate-50 text-slate-800 border-slate-300">Gris Sombra</button>
+                        <button onclick="setCardColor('indigo')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-indigo-50/70 text-indigo-950 border-indigo-200">Índigo Claro</button>
+                        <button onclick="setCardColor('emerald')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-emerald-50/70 text-emerald-950 border-emerald-200">Menta Claro</button>
+                        <button onclick="setCardColor('amber')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-amber-50/70 text-amber-950 border-amber-200">Warm Amber</button>
+                        <button onclick="setCardColor('dark')" class="p-2 border-2 rounded-lg text-center text-xs font-bold bg-slate-800 text-white border-slate-700">Noche Cards</button>
                     </div>
                 </div>
 
